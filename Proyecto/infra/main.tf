@@ -47,7 +47,6 @@ resource "azurerm_mssql_database" "db_negocios_u2" {
   storage_account_type        = "Local"
 }
 
-
 # Regla de firewall
 resource "azurerm_mssql_firewall_rule" "allow-azure-services" {
   name             = "AllowAzureServices"

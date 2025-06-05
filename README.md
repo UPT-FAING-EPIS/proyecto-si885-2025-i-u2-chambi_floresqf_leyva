@@ -1,5 +1,34 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Zu4fxsIs)
-[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=19716899)
-# proyecto-formatos-01 adjuntar repo u1
+[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=18754960)
+# proyecto-formatos-01
 
-grupo de 1
+CURSO: INTELIGENCIA DE NEGOCIOS
+
+Integrantes:
+
+Chambi Cori Jerson Roni 			(2021072619)
+
+Flores Quispe Jaime Elias			(2021070309)
+
+Leyva Sardón Elvis Ronald			(2021072614)
+
+
+Objetivo
+Diseñar e implementar un dashboard que facilite el monitoreo y análisis de la actividad en repositorios académicos de GitHub, permitiendo evaluar la calidad del desarrollo y promoviendo buenas prácticas en la gestión de versiones.
+¿Como se va a medir la calidad? Hay una Formula?
+¿Como se mide las buenas practicas de gestion de versiones?
+
+Objetivos Específicos
+●	Desarrollar un dashboard que recopile datos sobre commits, ramas, issues y pull requests en repositorios académicos. 
+Solo por repositorios o tambien por estudiante?
+
+●	Generar informes y métricas sobre la frecuencia de contribuciones, uso de tecnologías y documentación en los proyectos. 
+Como se va a medir?
+
+●	Proporcionar herramientas visuales para la consulta de estadísticas y tendencias de desarrollo. 
+Cuales herramientas? con que datos?
+
+●	Implementar funcionalidades que permitan evaluar el cumplimiento de buenas prácticas en la gestión de repositorios. 
+Como cuales? y que datos se van a utilizar?
+
+●	Facilitar la supervisión y retroalimentación de docentes mediante reportes detallados sobre la evolución de los proyectos estudiantiles.
+Opino que este objetivo aun no.

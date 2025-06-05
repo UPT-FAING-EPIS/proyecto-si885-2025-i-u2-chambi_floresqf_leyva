@@ -1,0 +1,10 @@
+# Ignorar la carpeta .terraform dentro del directorio infra
+/Proyecto/infra/.terraform/
+
+# Ignorar archivos de estado de Terraform y variables sensibles
+/Proyecto/infra/terraform.tfstate
+/Proyecto/infra/terraform.tfstate.backup
+/Proyecto/infra/terraform.tfvars
+/Proyecto/infra/*.tfvars
+*.auto.tfvars.json
+

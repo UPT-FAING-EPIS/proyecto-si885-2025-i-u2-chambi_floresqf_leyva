@@ -2,10 +2,8 @@ name: Run GitHub Scraper and Save Artifact
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - github_scraper/app.py
-      - .github/workflows/github-scraper-artifact.yml
+  schedule:
+    - cron: '5 07 * * *'  # Todos los días a las 15:05 UTC
 
 jobs:
   run-scraper:

@@ -1,0 +1,36 @@
+name: Run GitHub Scraper and Save Artifact
+
+on:
+  workflow_dispatch:        # Permite ejecución manual desde la pestaña Actions
+  push:
+    paths:
+      - github_scraper/app.py
+      - .github/workflows/github-scraper-artifact.yml
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas PyGithub
+
+      - name: Run GitHub Scraper
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python github_scraper/app.py
+
+      - name: Upload data artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-scraper-data
+          path: github_scraper/data/

@@ -14,7 +14,6 @@ terraform {
   }
 }
 
-
 provider "azurerm" {
   features {}
 
@@ -24,13 +23,13 @@ provider "azurerm" {
   tenant_id       = var.tenant_id
 }
 
-# Grupo de recursos
+# Grupo de recursos para el proyecto
 resource "azurerm_resource_group" "rg-negocios-u2" {
   name     = "rg-negocios-u2"
   location = "East US 2"
 }
 
-# Servidor SQL
+# Servidor SQL de Azure
 resource "azurerm_mssql_server" "negocios-u2" {
   name                         = "negocios-u2-sql"
   resource_group_name          = azurerm_resource_group.rg-negocios-u2.name
@@ -44,7 +43,7 @@ resource "azurerm_mssql_server" "negocios-u2" {
   }
 }
 
-# Base de datos
+# Base de datos principal
 resource "azurerm_mssql_database" "db_negocios_u2" {
   name                        = "SoftRepoTrack"
   server_id                   = azurerm_mssql_server.negocios-u2.id
@@ -55,10 +54,33 @@ resource "azurerm_mssql_database" "db_negocios_u2" {
   storage_account_type        = "Local"
 }
 
-# Regla de firewall
+# Regla de firewall para permitir acceso desde servicios de Azure
 resource "azurerm_mssql_firewall_rule" "allow-azure-services" {
   name             = "AllowAzureServices"
   server_id        = azurerm_mssql_server.negocios-u2.id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "255.255.255.255"
+}
+
+# Storage Account para archivos de datos del proyecto (CSVs, logs, etc.)
+resource "azurerm_storage_account" "negociosu2_storage" {
+  name                     = "negociosu2storage" 
+  resource_group_name      = azurerm_resource_group.rg-negocios-u2.name
+  location                 = azurerm_resource_group.rg-negocios-u2.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  min_tls_version          = "TLS1_2"
+  allow_blob_public_access = false
+
+  tags = {
+    environment = "academic"
+    project     = "SoftRepoTrack"
+  }
+}
+
+# Contenedor privado para archivos CSV, logs, etc.
+resource "azurerm_storage_container" "datafiles" {
+  name                  = "datafiles"
+  storage_account_name  = azurerm_storage_account.negociosu2_storage.name
+  container_access_type = "private"
 }

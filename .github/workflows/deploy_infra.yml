@@ -1,18 +1,16 @@
-name: Deploy Infrastructure
+name: Infraestructura deployment
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
-  terraform:
-    runs-on: ubuntu-latest
+  deploy-lab3-infra-and-restore:
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout del repositorio
         uses: actions/checkout@v3
-
-      - name: Verificar estructura de carpetas
-        run: ls -R Proyecto/infra
 
       - name: Login a Azure
         uses: azure/login@v1
@@ -36,11 +34,15 @@ jobs:
         working-directory: Proyecto/infra
         run: terraform init
 
-      - name: Terraform Plan (save plan to file)
+      - name: Terraform Plan
         working-directory: Proyecto/infra
-        run: terraform plan -var-file="terraform.tfvars" -out=tfplan.binary
+        run: terraform plan -var-file="terraform.tfvars" -out="tfplan.binary"
 
-      - name: Setup Infracost
+      - name: Terraform Apply
+        working-directory: Proyecto/infra
+        run: terraform apply -auto-approve "tfplan.binary"
+
+      - name: Setup infracost
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
@@ -51,13 +53,15 @@ jobs:
           infracost breakdown --path=tfplan.binary --format table
           infracost breakdown --path=tfplan.binary --format json > costos.json
 
-      - name: Install Pandoc and LaTeX
+      - name: Install Pandoc and LaTeX (texlive)
+        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic jq
 
       - name: Generate PDF report from costos.md
         working-directory: Proyecto/infra
+        shell: bash
         run: |
           echo "# Informe de Costos de Infraestructura - Proyecto" > costos.md
           echo "" >> costos.md
@@ -70,7 +74,7 @@ jobs:
           jq -r '.projects[].breakdown.resources[] |
           .name as $rname |
           .costComponents[] |
-          "| \($rname | if length > 20 then (.[:17] + "...") else . end) | \(.name) | \(.monthlyQuantity // "*Variable*") | \(.unit) | \(.monthlyCost | if . then "$" + tostring else "*Depende del uso*" end) |"' costos.json >> costos.md
+          "| \($rname | if length > 20 then (.[:17] + \"...\") else . end) | \(.name) | \(.monthlyQuantity // \"*Variable*\") | \(.unit) | \(.monthlyCost | if . then \"$\" + tostring else \"*Depende del uso*\" end) |"' costos.json >> costos.md
           echo "" >> costos.md
           total=$(jq -r '.projects[].breakdown.totalMonthlyCost' costos.json)
           echo "## Total Estimado" >> costos.md
@@ -83,9 +87,6 @@ jobs:
       - name: Subir artefacto Informe de costos
         uses: actions/upload-artifact@v4
         with:
-          name: costos-infraestructura
+          name: informe-costos-infraestructura
           path: Proyecto/infra/costos.pdf
 
-      - name: Terraform Apply
-        working-directory: Proyecto/infra
-        run: terraform apply -auto-approve "tfplan.binary"

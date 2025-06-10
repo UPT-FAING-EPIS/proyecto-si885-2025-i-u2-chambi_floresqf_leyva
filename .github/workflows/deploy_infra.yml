@@ -1,46 +1,39 @@
-name: Infraestructura deployment
+name: Deploy Infrastructure
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  deploy-lab3-infra-and-restore:
-    runs-on: windows-latest
+  terraform:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del repositorio
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Login a Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Verificar estructura de carpetas
+        run: ls -R Proyecto
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.6
+        uses: hashicorp/setup-terraform@v2
 
-      - name: Crear archivo terraform.tfvars
+      - name: Escribir archivo variables.auto.tfvars.json desde secreto
+        working-directory: ./Proyecto/infra
         run: |
-          echo "subscription_id = \"${{ secrets.SUBSCRIPTION_ID }}\"" > Proyecto/infra/terraform.tfvars
-          echo "sqladmin_username = \"${{ secrets.SQL_USERNAME }}\"" >> Proyecto/infra/terraform.tfvars
-          echo "sqladmin_password = \"${{ secrets.SQL_PASSWORD }}\"" >> Proyecto/infra/terraform.tfvars
-          echo "resource_group_name = \"${{ secrets.RESOURCE_GROUP }}\"" >> Proyecto/infra/terraform.tfvars
-          echo "location = \"${{ secrets.LOCATION }}\"" >> Proyecto/infra/terraform.tfvars
+          echo '${{ secrets.TFVARS_JSON }}' > variables.auto.tfvars.json
 
       - name: Terraform Init
-        working-directory: Proyecto/infra
+        working-directory: ./Proyecto/infra
         run: terraform init
 
-      - name: Terraform Plan
-        working-directory: Proyecto/infra
-        run: terraform plan -var-file="terraform.tfvars" -out="tfplan.binary"
-
-      - name: Terraform Apply
-        working-directory: Proyecto/infra
-        run: terraform apply -auto-approve "tfplan.binary"
+      - name: Terraform Plan (save plan to file)
+        working-directory: ./Proyecto/infra
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: terraform plan -out=tfplan.binary
 
       - name: Setup infracost
         uses: infracost/actions/setup@v3
@@ -48,20 +41,18 @@ jobs:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
       - name: Generate cost breakdown (table & JSON)
-        working-directory: Proyecto/infra
+        working-directory: ./Proyecto/infra
         run: |
           infracost breakdown --path=tfplan.binary --format table
           infracost breakdown --path=tfplan.binary --format json > costos.json
 
       - name: Install Pandoc and LaTeX (texlive)
-        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic jq
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic
 
       - name: Generate PDF report from costos.md
-        working-directory: Proyecto/infra
-        shell: bash
+        working-directory: ./Proyecto/infra
         run: |
           echo "# Informe de Costos de Infraestructura - Proyecto" > costos.md
           echo "" >> costos.md
@@ -74,7 +65,7 @@ jobs:
           jq -r '.projects[].breakdown.resources[] |
           .name as $rname |
           .costComponents[] |
-          "| \($rname | if length > 20 then (.[:17] + \"...\") else . end) | \(.name) | \(.monthlyQuantity // \"*Variable*\") | \(.unit) | \(.monthlyCost | if . then \"$\" + tostring else \"*Depende del uso*\" end) |"' costos.json >> costos.md
+          "| \($rname | if length > 20 then (.[:17] + "...") else . end) | \(.name) | \(.monthlyQuantity // "*Variable*") | \(.unit) | \(.monthlyCost | if . then "$" + tostring else "*Depende del uso*" end) |"' costos.json >> costos.md
           echo "" >> costos.md
           total=$(jq -r '.projects[].breakdown.totalMonthlyCost' costos.json)
           echo "## Total Estimado" >> costos.md
@@ -84,9 +75,17 @@ jobs:
           echo "_Este reporte fue generado automáticamente el día: $(date +%Y-%m-%d)_" >> costos.md
           pandoc costos.md -o costos.pdf
 
-      - name: Subir artefacto Informe de costos
+      - name: Upload PDF Report
         uses: actions/upload-artifact@v4
         with:
-          name: informe-costos-infraestructura
-          path: Proyecto/infra/costos.pdf
+          name: costos-infraestructura
+          path: ./Proyecto/infra/costos.pdf
 
+      - name: Terraform Apply
+        working-directory: ./Proyecto/infra
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: terraform apply -auto-approve

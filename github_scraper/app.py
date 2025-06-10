@@ -7,6 +7,7 @@ from datetime import datetime
 # -----------------------
 # CONFIGURACIÓN
 # -----------------------
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 print(f"Token empieza con: {GITHUB_TOKEN[:6] if GITHUB_TOKEN else 'Token vacío!'}")
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # <-- Cámbialo por seguridad en producción
 ORG_NAME = 'UPT-FAING-EPIS'

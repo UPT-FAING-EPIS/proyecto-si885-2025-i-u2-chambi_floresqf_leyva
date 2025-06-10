@@ -80,7 +80,7 @@ jobs:
           echo "_Este reporte fue generado automáticamente el día: $(date +%Y-%m-%d)_" >> costos.md
           pandoc costos.md -o costos.pdf
 
-      - name: Subir artefacto: Informe de costos
+      - name: Subir artefacto Informe de costos
         uses: actions/upload-artifact@v4
         with:
           name: costos-infraestructura

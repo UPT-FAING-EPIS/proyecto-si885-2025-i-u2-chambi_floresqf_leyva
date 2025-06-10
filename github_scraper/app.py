@@ -13,7 +13,7 @@ GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # <-- Cámbialo por seguridad en produ
 ORG_NAME = 'UPT-FAING-EPIS'
 OUTPUT_FOLDER = 'github_scraper/data'
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-LIMITE_REPOS = 27  # Limitar a 10 repositorios
+# LIMITE_REPOS = 27  # Comentado para procesar todos los repositorios
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # -----------------------
@@ -22,7 +22,7 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 g = Github(GITHUB_TOKEN)
 org = g.get_organization(ORG_NAME)
-repos = list(org.get_repos())[:LIMITE_REPOS]  # Solo tomar los primeros 10 repositorios
+repos = list(org.get_repos())  # Procesar todos los repositorios sin límite
 
 # -----------------------
 # EXTRAER DATOS
@@ -35,7 +35,7 @@ branches_info = []
 issues_info = []
 pull_requests_info = []
 
-print(f"📊 Analizando {len(repos)} repositorios (de un total disponible)...")
+print(f"📊 Analizando {len(repos)} repositorios (todos los disponibles)...")
 
 for i, repo in enumerate(repos, 1):
     print(f'[{i}/{len(repos)}] Analizando repositorio: {repo.name}')

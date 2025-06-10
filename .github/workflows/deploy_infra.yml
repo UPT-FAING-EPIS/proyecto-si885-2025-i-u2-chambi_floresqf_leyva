@@ -36,8 +36,47 @@ jobs:
 
     - name: Terraform Plan
       working-directory: Proyecto/infra
-      run: terraform plan -var-file="terraform.tfvars" -out="main.tfplan"
+      run: terraform plan -var-file="terraform.tfvars" -out="tfplan.binary"
 
-    - name: Terraform Apply
-      working-directory: Proyecto/infra
-      run: terraform apply -auto-approve "main.tfplan"
+    # -------------------------------
+    # BLOQUE DE COSTOS
+    # -------------------------------
+    - name: Instalar Infracost y herramientas
+      run: |
+        choco install infracost -y
+        choco install pandoc -y
+        choco install miktex -y
+
+    - name: Generar desglose de costos (tabla)
+      run: |
+        infracost breakdown --path=Proyecto/infra/tfplan.binary --format table
+
+    - name: Generar desglose de costos (JSON)
+      run: |
+        infracost breakdown --path=Proyecto/infra/tfplan.binary --format json > Proyecto/infra/costos.json
+
+    - name: Crear archivo costos.md
+      shell: pwsh
+      run: |
+        $json = Get-Content -Raw Proyecto/infra/costos.json | ConvertFrom-Json
+        $output = @("# Informe de Costos de Infraestructura - Proyecto Doc2Markdown`n`n## Recursos con Costo`n`n| Recurso | Componente | Cantidad | Unidad | Costo |`n|---------|------------|----------|--------|-------|")
+        foreach ($r in $json.projects.breakdown.resources) {
+          foreach ($c in $r.costComponents) {
+            $qty = if ($c.monthlyQuantity) { $c.monthlyQuantity } else { "*Variable*" }
+            $cost = if ($c.monthlyCost) { "$$($c.monthlyCost)" } else { "Depende del uso" }
+            $output += "| $($r.name) | $($c.name) | $qty | $($c.unit) | $cost |"
+          }
+        }
+        $output += "`n## Total: *$($json.projects.breakdown.totalMonthlyCost) USD/mes*"
+        $output += "`n*Actualizado: $(Get-Date -Format 'yyyy-MM-dd')*"
+        $output | Out-File Proyecto/infra/costos.md -Encoding utf8
+
+    - name: Generar PDF de costos
+      run: pandoc Proyecto/infra/costos.md -o Proyecto/infra/costos.pdf
+
+    - name: Subir artefacto Informe de costos
+      uses: actions/upload-artifact@v4
+      with:
+        name: informe-costos-infraestructura
+        path: Proyecto/infra/costos.pdf
+

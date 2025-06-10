@@ -1,82 +1,91 @@
-name: Infraestructura deployment
+name: Deploy Infrastructure
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  deploy-lab3-infra-and-restore:
-    runs-on: windows-latest
+  terraform:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout del repositorio
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Login a Azure
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Verificar estructura de carpetas
+        run: ls -R Proyecto/infra
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.6.6
+      - name: Login a Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Crear archivo terraform.tfvars
-      run: |
-        echo "subscription_id = \"${{ secrets.SUBSCRIPTION_ID }}\"" > Proyecto/infra/terraform.tfvars
-        echo "sqladmin_username = \"${{ secrets.SQL_USERNAME }}\"" >> Proyecto/infra/terraform.tfvars
-        echo "sqladmin_password = \"${{ secrets.SQL_PASSWORD }}\"" >> Proyecto/infra/terraform.tfvars
-        echo "resource_group_name = \"${{ secrets.RESOURCE_GROUP }}\"" >> Proyecto/infra/terraform.tfvars
-        echo "location = \"${{ secrets.LOCATION }}\"" >> Proyecto/infra/terraform.tfvars
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
 
-    - name: Terraform Init
-      working-directory: Proyecto/infra
-      run: terraform init
+      - name: Crear archivo terraform.tfvars
+        run: |
+          echo "subscription_id = \"${{ secrets.SUBSCRIPTION_ID }}\"" > Proyecto/infra/terraform.tfvars
+          echo "sqladmin_username = \"${{ secrets.SQL_USERNAME }}\"" >> Proyecto/infra/terraform.tfvars
+          echo "sqladmin_password = \"${{ secrets.SQL_PASSWORD }}\"" >> Proyecto/infra/terraform.tfvars
+          echo "resource_group_name = \"${{ secrets.RESOURCE_GROUP }}\"" >> Proyecto/infra/terraform.tfvars
+          echo "location = \"${{ secrets.LOCATION }}\"" >> Proyecto/infra/terraform.tfvars
 
-    - name: Terraform Plan
-      working-directory: Proyecto/infra
-      run: terraform plan -var-file="terraform.tfvars" -out="tfplan.binary"
+      - name: Terraform Init
+        working-directory: Proyecto/infra
+        run: terraform init
 
-    # -------------------------------
-    # BLOQUE DE COSTOS
-    # -------------------------------
-    - name: Instalar Infracost y herramientas
-      run: |
-        choco install infracost -y
-        choco install pandoc -y
-        choco install miktex -y
+      - name: Terraform Plan (save plan to file)
+        working-directory: Proyecto/infra
+        run: terraform plan -var-file="terraform.tfvars" -out=tfplan.binary
 
-    - name: Generar desglose de costos (tabla)
-      run: |
-        infracost breakdown --path=Proyecto/infra/tfplan.binary --format table
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-    - name: Generar desglose de costos (JSON)
-      run: |
-        infracost breakdown --path=Proyecto/infra/tfplan.binary --format json > Proyecto/infra/costos.json
+      - name: Generate cost breakdown (table & JSON)
+        working-directory: Proyecto/infra
+        run: |
+          infracost breakdown --path=tfplan.binary --format table
+          infracost breakdown --path=tfplan.binary --format json > costos.json
 
-    - name: Crear archivo costos.md
-      shell: pwsh
-      run: |
-        $json = Get-Content -Raw Proyecto/infra/costos.json | ConvertFrom-Json
-        $output = @("# Informe de Costos de Infraestructura - Proyecto Doc2Markdown`n`n## Recursos con Costo`n`n| Recurso | Componente | Cantidad | Unidad | Costo |`n|---------|------------|----------|--------|-------|")
-        foreach ($r in $json.projects.breakdown.resources) {
-          foreach ($c in $r.costComponents) {
-            $qty = if ($c.monthlyQuantity) { $c.monthlyQuantity } else { "*Variable*" }
-            $cost = if ($c.monthlyCost) { "$$($c.monthlyCost)" } else { "Depende del uso" }
-            $output += "| $($r.name) | $($c.name) | $qty | $($c.unit) | $cost |"
-          }
-        }
-        $output += "`n## Total: *$($json.projects.breakdown.totalMonthlyCost) USD/mes*"
-        $output += "`n*Actualizado: $(Get-Date -Format 'yyyy-MM-dd')*"
-        $output | Out-File Proyecto/infra/costos.md -Encoding utf8
+      - name: Install Pandoc and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic jq
 
-    - name: Generar PDF de costos
-      run: pandoc Proyecto/infra/costos.md -o Proyecto/infra/costos.pdf
+      - name: Generate PDF report from costos.md
+        working-directory: Proyecto/infra
+        run: |
+          echo "# Informe de Costos de Infraestructura - Proyecto" > costos.md
+          echo "" >> costos.md
+          echo "Este informe detalla los costos mensuales estimados de los recursos desplegados en la infraestructura del proyecto." >> costos.md
+          echo "" >> costos.md
+          echo "## Recursos con Costo" >> costos.md
+          echo "" >> costos.md
+          echo "| Recurso               | Componente | Cantidad | Unidad | Costo Mensual |" >> costos.md
+          echo "|:----------------------|:-----------|---------:|:------:|--------------:|" >> costos.md
+          jq -r '.projects[].breakdown.resources[] |
+          .name as $rname |
+          .costComponents[] |
+          "| \($rname | if length > 20 then (.[:17] + "...") else . end) | \(.name) | \(.monthlyQuantity // "*Variable*") | \(.unit) | \(.monthlyCost | if . then "$" + tostring else "*Depende del uso*" end) |"' costos.json >> costos.md
+          echo "" >> costos.md
+          total=$(jq -r '.projects[].breakdown.totalMonthlyCost' costos.json)
+          echo "## Total Estimado" >> costos.md
+          echo "" >> costos.md
+          echo "**Total mensual estimado:** \$${total} USD/mes" >> costos.md
+          echo "" >> costos.md
+          echo "_Este reporte fue generado automáticamente el día: $(date +%Y-%m-%d)_" >> costos.md
+          pandoc costos.md -o costos.pdf
 
-    - name: Subir artefacto Informe de costos
-      uses: actions/upload-artifact@v4
-      with:
-        name: informe-costos-infraestructura
-        path: Proyecto/infra/costos.pdf
+      - name: Subir artefacto: Informe de costos
+        uses: actions/upload-artifact@v4
+        with:
+          name: costos-infraestructura
+          path: Proyecto/infra/costos.pdf
 
+      - name: Terraform Apply
+        working-directory: Proyecto/infra
+        run: terraform apply -auto-approve "tfplan.binary"

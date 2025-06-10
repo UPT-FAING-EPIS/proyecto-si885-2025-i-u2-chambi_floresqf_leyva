@@ -7,8 +7,8 @@ from datetime import datetime
 # -----------------------
 # CONFIGURACIÓN
 # -----------------------
-
-GITHUB_TOKEN = os.getenv('GITHUB_ACCESS_TOKEN')  # <-- Cámbialo por seguridad en producción
+print(f"Token empieza con: {GITHUB_TOKEN[:6] if GITHUB_TOKEN else 'Token vacío!'}")
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # <-- Cámbialo por seguridad en producción
 ORG_NAME = 'UPT-FAING-EPIS'
 OUTPUT_FOLDER = 'data'
 LIMITE_REPOS = 21  # Limitar a 10 repositorios

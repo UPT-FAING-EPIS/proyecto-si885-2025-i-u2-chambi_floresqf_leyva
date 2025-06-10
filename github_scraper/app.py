@@ -13,7 +13,7 @@ GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # <-- Cámbialo por seguridad en produ
 ORG_NAME = 'UPT-FAING-EPIS'
 OUTPUT_FOLDER = 'github_scraper/data'
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-LIMITE_REPOS = 22  # Limitar a 10 repositorios
+LIMITE_REPOS = 24  # Limitar a 10 repositorios
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # -----------------------

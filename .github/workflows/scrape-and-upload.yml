@@ -1,0 +1,73 @@
+name: GitHub Scrape and Upload
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Todos los días a las 2am UTC (ajusta si lo necesitas)
+  workflow_dispatch:      # Permite ejecución manual
+
+jobs:
+  scrape-and-upload:
+    runs-on: ubuntu-alatest
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN_API }}        # Tu token de GitHub con permisos apropiados
+      AZURE_STORAGE_ACCOUNT: negociosu2storage             # Cambia si tu Storage Account tiene otro nombre
+      AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}  # Llave del Storage Account (guárdala como secreto)
+      AZURE_STORAGE_CONTAINER: datafiles                   # Nombre del contenedor creado en Terraform
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install azure-storage-blob pandas PyGithub
+
+      - name: Ejecutar script de scraping
+        run: |
+          python tu_script_scraper.py
+
+      - name: Subir archivos CSV al Storage Account
+        run: |
+          for f in data/*.csv; do
+            az storage blob upload \
+              --account-name "$AZURE_STORAGE_ACCOUNT" \
+              --account-key "$AZURE_STORAGE_KEY" \
+              --container-name "$AZURE_STORAGE_CONTAINER" \
+              --name "$(basename $f)" \
+              --file "$f" \
+              --overwrite
+          done
+        env:
+          AZURE_STORAGE_ACCOUNT: ${{ env.AZURE_STORAGE_ACCOUNT }}
+          AZURE_STORAGE_KEY: ${{ env.AZURE_STORAGE_KEY }}
+          AZURE_STORAGE_CONTAINER: ${{ env.AZURE_STORAGE_CONTAINER }}
+        shell: bash
+
+      # Opcional: Carga a SQL Server desde aquí si tienes un script que lo haga
+
+      - name: Upload logs (opcional)
+        if: always()
+        run: |
+          for f in data/*.log; do
+            az storage blob upload \
+              --account-name "$AZURE_STORAGE_ACCOUNT" \
+              --account-key "$AZURE_STORAGE_KEY" \
+              --container-name "$AZURE_STORAGE_CONTAINER" \
+              --name "logs/$(basename $f)" \
+              --file "$f" \
+              --overwrite
+          done
+        env:
+          AZURE_STORAGE_ACCOUNT: ${{ env.AZURE_STORAGE_ACCOUNT }}
+          AZURE_STORAGE_KEY: ${{ env.AZURE_STORAGE_KEY }}
+          AZURE_STORAGE_CONTAINER: ${{ env.AZURE_STORAGE_CONTAINER }}
+        shell: bash
+

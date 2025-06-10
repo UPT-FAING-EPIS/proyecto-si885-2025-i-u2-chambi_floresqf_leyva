@@ -11,7 +11,8 @@ GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 print(f"Token empieza con: {GITHUB_TOKEN[:6] if GITHUB_TOKEN else 'Token vacío!'}")
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # <-- Cámbialo por seguridad en producción
 ORG_NAME = 'UPT-FAING-EPIS'
-OUTPUT_FOLDER = 'data'
+OUTPUT_FOLDER = 'github_scraper/data'
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 LIMITE_REPOS = 21  # Limitar a 10 repositorios
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 

@@ -48,8 +48,7 @@ jobs:
       - name: Run SQL script on Azure SQL
         env:
           AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
-          AZURE_SQL_DB: ${{ secrets.AZURE_SQL_DB_2 }}
           AZURE_SQL_USER: ${{ secrets.AZURE_SQL_USER }}
           AZURE_SQL_PASS: ${{ secrets.AZURE_SQL_PASS }}
         run: |
-          /opt/mssql-tools18/bin/sqlcmd -S "$AZURE_SQL_SERVER" -d "$AZURE_SQL_DB_2" -U "$AZURE_SQL_USER" -P "$AZURE_SQL_PASS" -i github_scraper/data/github_data_insert.sql
+          /opt/mssql-tools18/bin/sqlcmd -S "$AZURE_SQL_SERVER" -d Pruebita -U "$AZURE_SQL_USER" -P "$AZURE_SQL_PASS" -i github_scraper/data/github_data_insert.sql

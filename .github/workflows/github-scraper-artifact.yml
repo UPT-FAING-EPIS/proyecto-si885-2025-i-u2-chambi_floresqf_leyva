@@ -26,7 +26,7 @@ jobs:
 
       - name: Run GitHub Scraper
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_SCRAPER }}
         run: python github_scraper/app.py
 
       - name: Upload data artifacts

@@ -188,3 +188,11 @@ sequenceDiagram
 - Considerar la integración futura con LMS como Moodle para centralizar la información académica.
 
 ---
+
+# ENLACE DE DASHBOARD
+
+https://app.powerbi.com/links/VtN9HA7oPn?ctid=b6b466ee-468d-4011-b9fc-fbdcf82ac90a&pbi_source=linkShare
+
+![image](https://github.com/user-attachments/assets/cabfa55f-012d-4b83-bd14-5ef95a8221b9)
+
+

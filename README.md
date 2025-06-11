@@ -1,33 +1,13 @@
-
-CURSO: INTELIGENCIA DE NEGOCIOS
-
-Integrantes:
-
-Chambi Cori Jerson Roni 			(2021072619)
-
-Flores Quispe Jaime Elias			(2021070309)
-
-Leyva Sardón Elvis Ronald			(2021072614)
-
+# 🎓 Universidad Privada de Tacna
+# CURSO: INTELIGENCIA DE NEGOCIOS
+## 👨‍🎓 Alumnos
+- **Jerson Roni Chambi Cori**
+- **Jaime Elias Flores Quispe**
+- **Elvis Ronald Leyva Sardon**
 
 # Aplicación de Monitoreo de Repositorios Académicos en GitHub
 
 Sistema para la **evaluación automática y monitoreo** de repositorios académicos de estudiantes de la Facultad de Ingeniería de Sistemas, Universidad Privada de Tacna. Facilita el análisis de métricas de contribución, calidad del código, uso de buenas prácticas y tecnologías empleadas, además de proveer dashboards y reportes para docentes y estudiantes.
-
----
-
-## Tabla de Contenido
-
-- [Descripción General](#descripción-general)
-- [Objetivos](#objetivos)
-- [Funcionalidades Principales](#funcionalidades-principales)
-- [Requerimientos Funcionales](#requerimientos-funcionales)
-- [Diagramas en Mermaid](#diagramas-en-mermaid)
-    - [Diagrama de Arquitectura](#diagrama-de-arquitectura)
-    - [Diagrama de Casos de Uso](#diagrama-de-casos-de-uso)
-    - [Diagrama de Secuencia](#diagrama-de-secuencia)
-- [Reglas de Negocio](#reglas-de-negocio)
-- [Recomendaciones](#recomendaciones)
 
 ---
 
@@ -78,13 +58,30 @@ Esta herramienta automatiza la revisión de repositorios GitHub usados en cursos
 ### Diagrama de Arquitectura
 
 ```mermaid
-graph TD
-    A[Usuario (Docente/Estudiante)] -->|OAuth2| B[Aplicación de Monitoreo]
-    B -->|API GitHub| C[GitHub]
-    B -->|Datos| D[Base de Datos MySQL]
-    B -->|Dashboards| E[Power BI]
-    B -->|Reportes| F[PDF/CSV]
-    B -->|Analítica| G[Motor Python ETL]
+flowchart TD
+    github[GitHub]:::github
+    actions[GitHub Actions]:::actions
+    etl[Script Python ETL]:::etl
+    storage[Azure Storage Account]:::storage
+    sql[Azure SQL Database]:::sql
+    powerbi[Power BI]:::powerbi
+    user[Usuario Final]:::user
+
+    github -->|Trigger| actions
+    actions -->|Ejecuta script| etl
+    etl -->|Escribe CSV/SCRIPT| storage
+    etl -->|Carga datos| sql
+    storage -->|Importación opcional| sql
+    sql -->|Provee datos| powerbi
+    powerbi -->|Dashboards,\nReportes| user
+
+    classDef github fill:#f0f8ff,stroke:#000,stroke-width:1px,color:#222;
+    classDef actions fill:#ffffe0,stroke:#000,stroke-width:1px,color:#222;
+    classDef etl fill:#90ee90,stroke:#000,stroke-width:1px,color:#222;
+    classDef storage fill:#87ceeb,stroke:#000,stroke-width:1px,color:#222;
+    classDef sql fill:#add8e6,stroke:#000,stroke-width:1px,color:#222;
+    classDef powerbi fill:#f5deb3,stroke:#000,stroke-width:1px,color:#222;
+    classDef user fill:#ffc0cb,stroke:#000,stroke-width:1px,color:#222;
 ```
 
 ---
@@ -92,15 +89,19 @@ graph TD
 ### Diagrama de Casos de Uso
 
 ```mermaid
-usecaseDiagram
-    actor Docente
-    actor Estudiante
-    Docente --> (Ver dashboard de curso)
-    Docente --> (Exportar reportes)
-    Estudiante --> (Ver progreso personal)
-    Estudiante --> (Recibir retroalimentación)
-    (Ver dashboard de curso) --> (Analizar métricas de repositorio)
-    (Ver progreso personal) --> (Checklist de buenas prácticas)
+flowchart LR
+    Scheduler["Scheduler (Crontab)"]
+    User["Usuario"]
+
+    subgraph "Sistema ETL / Dashboard Power BI"
+      UC1["Actualizar datos periódicamente automáticamente"]
+      UC2["Visualizar dashboard en Power BI"]
+      UC3["Ejecutar filtros en dashboard"]
+    end
+
+    Scheduler --> UC1
+    User --> UC2
+    User --> UC3
 ```
 
 ---
@@ -108,29 +109,73 @@ usecaseDiagram
 ### Diagrama de Secuencia
 
 ```mermaid
+%% Diagrama 1: Proceso automático ETL
 sequenceDiagram
-    participant User as Usuario
-    participant App as Aplicación
-    participant GitHub as GitHub API
-    participant DB as Base de Datos
-    User->>App: Solicita análisis de repositorio
-    App->>GitHub: Consulta commits, issues, PRs
-    GitHub-->>App: Devuelve datos
-    App->>DB: Almacena resultados
-    App-->>User: Muestra métricas y reportes
+    participant Scheduler
+    participant ETL as "Sistema ETL"
+    participant DataSource as "Fuente de datos"
+    participant Database as "Base de datos"
+    participant Artifacts as "Artefactos de visualización"
+
+    Scheduler->>ETL: Dispara proceso según intervalo
+    ETL->>DataSource: Extraer datos
+    alt Datos extraídos correctamente
+        ETL->>ETL: Transformar y limpiar datos
+        ETL->>Database: Cargar datos limpios
+        alt Carga correcta
+            ETL->>Artifacts: Actualizar artefactos para visualización
+        else Error al cargar datos
+            ETL-->>Scheduler: Notificar fallo en carga
+        end
+    else Error en extracción
+        ETL-->>Scheduler: Notificar fallo en conexión o script ETL
+    end
+```
+
+```mermaid
+%% Diagrama 2: Visualizar dashboard en Power BI
+sequenceDiagram
+    participant Usuario
+    participant Dashboard as "Dashboard Power BI"
+    participant Database as "Base de datos"
+
+    Usuario->>Dashboard: Abre sitio web del dashboard
+    Dashboard->>Database: Solicita datos actualizados
+    alt Datos disponibles
+        Database-->>Dashboard: Envía datos
+        Dashboard-->>Usuario: Muestra datos y visualizaciones
+    else Problemas de acceso o datos
+        Dashboard-->>Usuario: Muestra error o datos desactualizados
+    end
+    Usuario->>Dashboard: Navega entre vistas y gráficos
+```
+
+```mermaid
+%% Diagrama 3: Ejecutar filtros en dashboard
+sequenceDiagram
+    participant Usuario
+    participant Dashboard as "Dashboard Power BI"
+    participant Database as "Base de datos"
+
+    Usuario->>Dashboard: Selecciona filtros
+    Dashboard->>Database: Solicita datos filtrados
+    alt Datos filtrados disponibles
+        Database-->>Dashboard: Envía datos filtrados
+        Dashboard-->>Usuario: Actualiza visualizaciones
+    else Filtros sin resultados o error
+        Dashboard-->>Usuario: Muestra mensaje de error o sin resultados
+    end
 ```
 
 ---
 
 ## Reglas de Negocio
 
-- Todo usuario debe iniciar sesión mediante OAuth2 con su cuenta de GitHub.
-- Solo se analizan repositorios públicos o privados con permisos autorizados.
-- El usuario puede seleccionar un rango temporal para el análisis.
+- Solo se analizan repositorios públicos de la organizacion con permisos autorizados.
+- El usuario puede seleccionar un filtro de año y mes para el análisis.
 - Para ser considerado válido, un repositorio debe tener al menos un commit y archivos fuente/documentación.
 - Debe existir un archivo `README.md` y al menos un informe técnico (.docx o .md).
 - La detección de tecnologías se realiza automáticamente.
-- Los reportes y dashboards se generan bajo demanda o cada 24 horas si el monitoreo está activo.
 
 ---
 

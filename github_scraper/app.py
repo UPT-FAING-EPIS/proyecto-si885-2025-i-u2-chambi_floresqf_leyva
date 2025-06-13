@@ -13,7 +13,11 @@ GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # <-- Cámbialo por seguridad en produ
 ORG_NAME = 'UPT-FAING-EPIS'
 OUTPUT_FOLDER = 'github_scraper/data'
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-# LIMITE_REPOS = 27  # Comentado para procesar todos los repositorios
+
+# FILTRO DE REPOSITORIOS - Solo procesar repos que empiecen con "proyecto"
+FILTRO_NOMBRE = 'proyecto'  # Cambiar aquí si quieres otro prefijo
+USE_FILTRO = True  # Cambiar a False para procesar todos los repos
+
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # -----------------------
@@ -22,7 +26,23 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 g = Github(GITHUB_TOKEN)
 org = g.get_organization(ORG_NAME)
-repos = list(org.get_repos())  # Procesar todos los repositorios sin límite
+all_repos = list(org.get_repos())
+
+# Aplicar filtro si está habilitado
+if USE_FILTRO:
+    repos = [repo for repo in all_repos if repo.name.lower().startswith(FILTRO_NOMBRE.lower())]
+    print(f"🔍 Filtro aplicado: repositorios que empiecen con '{FILTRO_NOMBRE}'")
+    print(f"📊 Encontrados {len(repos)} repositorios de {len(all_repos)} totales")
+else:
+    repos = all_repos
+    print(f"📊 Procesando todos los {len(repos)} repositorios disponibles")
+
+# Mostrar repositorios que se van a procesar
+print("\n🗂️ Repositorios a procesar:")
+for i, repo in enumerate(repos[:10], 1):  # Mostrar solo los primeros 10
+    print(f"  {i}. {repo.name}")
+if len(repos) > 10:
+    print(f"  ... y {len(repos) - 10} más")
 
 # -----------------------
 # EXTRAER DATOS
@@ -35,7 +55,7 @@ branches_info = []
 issues_info = []
 pull_requests_info = []
 
-print(f"📊 Analizando {len(repos)} repositorios (todos los disponibles)...")
+print(f"\n🚀 Iniciando análisis de {len(repos)} repositorios filtrados...")
 
 for i, repo in enumerate(repos, 1):
     print(f'[{i}/{len(repos)}] Analizando repositorio: {repo.name}')

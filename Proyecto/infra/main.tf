@@ -74,6 +74,6 @@ resource "azurerm_storage_account" "proyecto_negocios_u2_storage" {
 
 resource "azurerm_storage_container" "proyecto_datafiles" {
   name                  = "datafiles"
-  storage_account_name  = azurerm_storage_account.proyecto_negocios_u2_storage.name
+  storage_account_id  = azurerm_storage_account.proyecto_negocios_u2_storage.id
   container_access_type = "private"
 }

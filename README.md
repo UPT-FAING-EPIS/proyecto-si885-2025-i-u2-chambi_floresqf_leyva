@@ -5,7 +5,7 @@
 - **Jaime Elias Flores Quispe**
 - **Elvis Ronald Leyva Sardon**
 
-# Aplicación de Monitoreo de Repositorios Académicos en GitHub
+# Dashboard de Monitoreo de Repositorios Académicos en GitHub
 
 Sistema para la **evaluación automática y monitoreo** de repositorios académicos de estudiantes de la Facultad de Ingeniería de Sistemas, Universidad Privada de Tacna. Facilita el análisis de métricas de contribución, calidad del código, uso de buenas prácticas y tecnologías empleadas, además de proveer dashboards y reportes para docentes y estudiantes.
 

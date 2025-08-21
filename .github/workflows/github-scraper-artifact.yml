@@ -1,9 +1,9 @@
 name: Run GitHub Scraper and Save Artifact
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '20 21 * * *'  # Todos los días a las 15:05 UTC
+#  workflow_dispatch:
+#  schedule:
+#    - cron: '20 21 * * *'  # Todos los días a las 15:05 UTC
 
 jobs:
   run-scraper:
